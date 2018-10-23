@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, make_response
 
 from model import DecisionTree
 
@@ -8,9 +8,8 @@ MODELS = {}
 
 @app.route('/model/upload/decisiontree/<name>', methods=["POST"])
 def upload_model(name):
+    """Uploads a decision tree model with the given name"""
     model = DecisionTree(request.get_json(force=True))
-    print(request.get_json())
-    print(MODELS)
     MODELS[name] = model
     return "OK"
 
@@ -19,7 +18,10 @@ def upload_model(name):
 def predict_with_model(name):
     row = request.get_json(force=True)
     model_func = get_model_func(name)
-    return model_func(row)
+    if model_func:
+        return model_func(row)
+    else:
+        return make_response("No Such Model", 404)
 
 
 def get_model_func(name):
