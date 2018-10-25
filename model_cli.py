@@ -26,6 +26,7 @@ def pretty_print_result(args_dict, api_result):
 
     print_delim_line()
     print_within_box(" Asked model for prediction for data: ")
+    print_empty_line()
 
     for key, value in args_dict.items():
         print_within_box(f"    {key.title()}: {value}")
