@@ -1,0 +1,99 @@
+import json
+from collections import Counter
+
+
+def deserialize(model_string):
+    model_classes = {
+        "decision_tree": DecisionTree,
+        "random_forest": RandomForest
+    }
+    try:
+        model_json = json.loads(model_string)
+        model_type = model_json["model_type"]
+        model_class = model_classes[model_type]
+        return model_class(model_json)
+    except:
+        return None
+
+
+def serialize(model):
+    try:
+        return json.dumps(model.data)
+    except AttributeError or ValueError or TypeError:
+        return None
+
+
+class DecisionTree:
+    """A simple decision tree. Currently supports only numerical values and pure categorical outputs."""
+
+    def __init__(self, data):
+        """Creates a decision tree.
+
+        :param data: the JSON data that was used to construct the decision tree
+        """
+        self.data = data
+        self.model_func = DecisionTree._deserialize_decision_tree_from_json(data["model"])
+
+    def __call__(self, *args, **kwargs):
+        return self.model_func(*args, **kwargs)
+
+    def get_original_json(self):
+        return self.data
+
+    @staticmethod
+    def _deserialize_decision_tree_from_json(data, fields=None):
+        """Deserializes the model from the given JSON. The JSON must have the following form:
+
+        A DT is one of:
+        - String, the result to return for this node.
+        - {"split_col": String, "split_val": String, "left": DT, "right": DT}, specifying a column to split on,
+           the value to split on (if the input is lower than that value, goes to the left, greater to the right)
+           and the left/right node of the tree.
+
+        :param data: JSON in the above-described DT format.
+        :rtype: Dict -> String
+        :return: the function that makes predictions for the type of data the model was produced for
+        """
+        # String case is simple: always return the string at the terminal node
+        if isinstance(data, str):
+            return lambda x: data
+
+        # Dictionary case: extract all the data, create models of left and right, dispatch to left or right
+        # model based on comparison of split_col.
+        try:
+            split_column = data["split_col"]
+            split_value = data["split_val"]
+
+            left_model = DecisionTree._deserialize_decision_tree_from_json(data["left"])
+            right_model = DecisionTree._deserialize_decision_tree_from_json(data["right"])
+
+        except KeyError or ValueError as e:
+            raise ValueError(f"Invalid JSON {json.dumps(data)} for Decision Tree.", e)
+
+        def model_func(row):
+            return left_model(row) if row[split_column] < split_value else right_model(row)
+
+        return model_func
+
+
+class RandomForest:
+    def __init__(self, data):
+        """Data is expected to be a list of dictionaries parseable as a DecisionTree"""
+        self.data = data
+        self.func, self.trees = RandomForest.read_func_from_data(data["model"])
+
+    def __call__(self, *args, **kwargs):
+        self.func(*args, **kwargs)
+
+    def get_original_json(self):
+        return self.data
+
+    @staticmethod
+    def read_func_from_data(data):
+        trees = [DecisionTree._deserialize_decision_tree_from_json(item) for item in data]
+
+        def predict(input):
+            # TODO this only works for categorical outputs, have to update for continuous output
+            return Counter([tree(input) for tree in trees]).most_common(1)[0][0]
+
+        return (predict, trees)
