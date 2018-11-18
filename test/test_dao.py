@@ -41,7 +41,7 @@ def test_can_store_retrieve_decision_tree():
     success = dao.store_model("user1", "model1", credit_score_decision_tree)
     assert success
     model = dao.retrieve_model("user1", "model1")
-    assert credit_score_decision_tree.data == model.data
+    assert credit_score_decision_tree.get_original_json() == model.get_original_json()
 
 
 @pytest.mark.requires_local_redis
@@ -49,7 +49,7 @@ def test_can_store_retrieve_random_forest():
     success = dao.store_model("user1", "model1", credit_score_random_forest)
     assert success
     model = dao.retrieve_model("user1", "model1")
-    assert credit_score_random_forest.data == model.data
+    assert credit_score_random_forest.get_original_json() == model.get_original_json()
 
 @pytest.mark.requires_local_redis
 def test_retrieved_model_same_as_original_model():

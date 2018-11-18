@@ -41,7 +41,7 @@ class DecisionTree:
         return self.data
 
     @staticmethod
-    def _deserialize_decision_tree_from_json(data, fields=None):
+    def _deserialize_decision_tree_from_json(data):
         """Deserializes the model from the given JSON. The JSON must have the following form:
 
         A DT is one of:
@@ -56,6 +56,8 @@ class DecisionTree:
         """
         # String case is simple: always return the string at the terminal node
         if isinstance(data, str):
+            # TODO add support for continuous prediction variable, error bar, in general more types
+            # of terminal nodes based on what is supported in common ML libraries
             return lambda x: data
 
         # Dictionary case: extract all the data, create models of left and right, dispatch to left or right
@@ -80,7 +82,7 @@ class RandomForest:
     def __init__(self, data):
         """Data is expected to be a list of dictionaries parseable as a DecisionTree"""
         self.data = data
-        self.func, self.trees = RandomForest.read_func_from_data(data["model"])
+        self.func = RandomForest.read_func_from_data(data["model"])
 
     def __call__(self, *args, **kwargs):
         self.func(*args, **kwargs)
@@ -96,4 +98,4 @@ class RandomForest:
             # TODO this only works for categorical outputs, have to update for continuous output
             return Counter([tree(input) for tree in trees]).most_common(1)[0][0]
 
-        return (predict, trees)
+        return predict

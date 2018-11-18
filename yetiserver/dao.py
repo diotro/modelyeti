@@ -19,7 +19,7 @@ def set_redis_connection_parameters(host, port, password):
     __password = password
 
 
-def _get_redis_connection(redis_class=None):
+def _get_redis_connection(redis_class=redis.Redis):
     """ Using the globals `__host`, `__port`, and `__password`, returns a redis connection
     to the redis server specified.
 
@@ -28,11 +28,6 @@ def _get_redis_connection(redis_class=None):
     :return: A `redis.Redis` connected to the database.
     :raises redis.RedisException: if can't connect to the database
     """
-    redis_class = redis_class or redis.Redis
-    # global __redis_conn
-    # if not __redis_conn:
-    #     __redis_conn = redis_class(host=__host, port=__port, password=__password)
-    # return __redis_conn
     return redis_class(host=__host, port=__port, password=__password)
 
 
