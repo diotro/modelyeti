@@ -1,9 +1,8 @@
-import json
 import logging
 logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s', level=logging.DEBUG)
 import redis
 
-from yetiserver import model
+from src.yetiserver import model
 
 __host = 'localhost'
 __port = 6379

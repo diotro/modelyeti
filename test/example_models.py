@@ -1,4 +1,5 @@
-from yetiserver import model
+from src.yetiserver import model
+
 
 # Not pytest fixtures because they are static, immutable values. No need to create new one
 # for each test.

@@ -1,6 +1,4 @@
-from functools import wraps
-
-import yetiserver.dao as dao
+from src import yetiserver as dao
 
 from flask import Flask, request, make_response
 
