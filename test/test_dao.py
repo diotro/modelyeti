@@ -56,7 +56,7 @@ def test_retrieved_model_same_as_original_model(dao):
     dao.store_model("user2", "model2", credit_score_decision_tree)
     retrieved_model = dao.retrieve_model("user2", "model2")
     for (income, credit) in [(100, 100), (100_000, 100), (100_000, 1000), (100, 1000)]:
-        data = {"income": income, "credit_score": credit}
+        data = {"income": income, "credit score": credit}
         assert credit_score_decision_tree(data) == retrieved_model(data)
 
 

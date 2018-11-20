@@ -1,4 +1,6 @@
 import json
+import logging
+logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s', level=logging.DEBUG)
 from collections import Counter
 
 
@@ -79,23 +81,29 @@ class DecisionTree:
 
 
 class RandomForest:
+    """A random forest. Essentially just a list of `DecisionTree`s."""
     def __init__(self, data):
-        """Data is expected to be a list of dictionaries parseable as a DecisionTree"""
+        """Data is expected to be a list of dictionaries, each parseable as a DecisionTree"""
         self.data = data
-        self.func = RandomForest.read_func_from_data(data["model"])
+        self.func = RandomForest._read_func_from_data(data["model"])
 
     def __call__(self, *args, **kwargs):
-        self.func(*args, **kwargs)
+        return self.func(*args, **kwargs)
 
     def get_original_json(self):
         return self.data
 
     @staticmethod
-    def read_func_from_data(data):
+    def _read_func_from_data(data):
         trees = [DecisionTree._deserialize_decision_tree_from_json(item) for item in data]
 
         def predict(input):
             # TODO this only works for categorical outputs, have to update for continuous output
-            return Counter([tree(input) for tree in trees]).most_common(1)[0][0]
+            predictions = [tree(input) for tree in trees]
+            logging.log(logging.DEBUG, predictions)
+            # Returns as array of length one, containing tuple of item and count, so value is at index [0][0]
+            most_common = Counter(predictions).most_common(1)
+            logging.log(logging.DEBUG, most_common)
+            return most_common[0][0]
 
         return predict
