@@ -18,7 +18,7 @@ def set_redis_connection_parameters(host, port, password):
     __password = password
 
 
-def _get_redis_connection(redis_class=redis.Redis):
+def _get_redis_connection():
     """ Using the globals `__host`, `__port`, and `__password`, returns a redis connection
     to the redis server specified.
 
@@ -27,7 +27,11 @@ def _get_redis_connection(redis_class=redis.Redis):
     :return: A `redis.Redis` connected to the database.
     :raises redis.RedisException: if can't connect to the database
     """
-    return redis_class(host=__host, port=__port, password=__password)
+    global __redis_conn
+    # Only update connection if there is no defined connection, or the class requested is different
+    if not __redis_conn:
+        __redis_conn = redis.Redis(host=__host, port=__port, password=__password)
+    return __redis_conn
 
 
 def retrieve_model(user_name, model_name, rconn=None):
@@ -54,16 +58,7 @@ def retrieve_serialized_model(rconn, user_name, model_name):
     :param model_name: the model to retrieve
     :return:
     """
-    return rconn.get(__key_for_model(user_name, model_name))
-
-
-def __key_for_model(user_name, model_name):
-    """What key should the model of the given name belonging to the user with the given name be
-    stored under?
-
-    :return: The key that the model is stored under.
-    """
-    return yetiserver.redis_keys.for_model(user_name, model_name)
+    return rconn.get(yetiserver.redis_keys.for_model(user_name, model_name))
 
 
 def store_model(user_name, model_name, model_to_store, rconn=None):
@@ -77,7 +72,7 @@ def store_model(user_name, model_name, model_to_store, rconn=None):
     """
     try:
         rconn = rconn or _get_redis_connection()
-        rconn.set(__key_for_model(user_name, model_name), model.serialize(model_to_store))
+        rconn.set(yetiserver.redis_keys.for_model(user_name, model_name), model.serialize(model_to_store))
         return True
     except redis.RedisError as e:
         logging.warning(e)

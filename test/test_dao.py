@@ -4,33 +4,22 @@ import pytest
 import redis
 
 from test.example_models import credit_score_decision_tree, credit_score_random_forest
-from yetiserver import model
+from yetiserver import model, redis_keys
 from test.fixtures import dao
 
 
-def test_raise_exception_on_failure_to_connect_to_db(dao):
-    class RedisExceptionThrower:
-        def __init__(self, *args, **kwargs):
-            raise redis.RedisError
-
+@mock.patch('redis.Redis')
+def test_raise_exception_on_failure_to_connect_to_db(mock_redis, dao):
+    mock_redis.side_effect = redis.RedisError("error")
     with pytest.raises(redis.RedisError):
-        dao._get_redis_connection(redis_class=RedisExceptionThrower)
+        dao._get_redis_connection()
 
 
-def test_setting_connection_parameters_changes_connection_details(dao):
-    class RedisRememberArgs:
-        def __init__(self, **kwargs):
-            self.kwargs = kwargs
-
-    before_host, before_port, before_pass = dao.__host, dao.__port, dao.__password
+@mock.patch('redis.Redis')
+def test_setting_connection_parameters_changes_connection_details(mock_redis, dao):
     dao.set_redis_connection_parameters("host", "port", "pass")
-
-    r = dao._get_redis_connection(redis_class=RedisRememberArgs)
-    assert r.kwargs['host'] == "host"
-    assert r.kwargs['port'] == "port"
-    assert r.kwargs['password'] == "pass"
-
-    dao.set_redis_connection_parameters(before_host, before_port, before_pass)
+    dao._get_redis_connection()
+    mock_redis.assert_called_once_with(host= "host", port='port', password='pass')
 
 
 def test_attempt_to_retrieve_model_doesnt_exist_returns_none(dao):
@@ -49,7 +38,7 @@ def test_storing_model_in_correct_place(dao):
 
     dao.store_model(user, model_name, credit_score_decision_tree, rconn=mock_conn)
 
-    expected_key = dao.__key_for_model(user, model_name)
+    expected_key = redis_keys.for_model(user, model_name)
     expected_value = model.serialize(credit_score_decision_tree)
     mock_conn.set.assert_called_once_with(expected_key, expected_value)
 
@@ -61,7 +50,7 @@ def test_retrieving_model_looks_in_correct_place(dao):
 
     dao.retrieve_model(user, model_name, rconn=mock_conn)
 
-    expected_key = dao.__key_for_model(user, model_name)
+    expected_key = redis_keys.for_model(user, model_name)
     mock_conn.get.assert_called_once_with(expected_key)
 
 @pytest.mark.integration
