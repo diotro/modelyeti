@@ -18,7 +18,11 @@ pip3 install -r requirements.txt
 pip3 install -e src
 ```
 
-You'll also need redis installed. See https://redis.io/topics/quickstart
+You'll also need redis installed. See https://redis.io/topics/quickstart Then, run the server in
+the background on port 14321 with:
+```
+redis-server --port 14321 --daemonize yes
+```
 
 Run the server with:
 ```
