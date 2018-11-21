@@ -1,5 +1,5 @@
-import logging
-logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s', level=logging.DEBUG)
+from yetiserver.logger import logging
+import yetiserver.redis_keys
 import redis
 
 from src.yetiserver import model
@@ -63,7 +63,7 @@ def __key_for_model(user_name, model_name):
 
     :return: The key that the model is stored under.
     """
-    return f"models::${user_name}::${model_name}"
+    return yetiserver.redis_keys.for_model(user_name, model_name)
 
 
 def store_model(user_name, model_name, model_to_store, rconn=None):
@@ -80,5 +80,5 @@ def store_model(user_name, model_name, model_to_store, rconn=None):
         rconn.set(__key_for_model(user_name, model_name), model.serialize(model_to_store))
         return True
     except redis.RedisError as e:
-        logging.error(e)
+        logging.warning(e)
         return False

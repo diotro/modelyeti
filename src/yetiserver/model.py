@@ -82,6 +82,7 @@ class DecisionTree:
 
 class RandomForest:
     """A random forest. Essentially just a list of `DecisionTree`s."""
+
     def __init__(self, data):
         """Data is expected to be a list of dictionaries, each parseable as a DecisionTree"""
         self.data = data

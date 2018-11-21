@@ -1,6 +1,6 @@
 import json
 
-from src.yetiserver import model
+from yetiserver import model
 from test.example_models import all_test_decision_trees, all_test_random_forests, \
     credit_score_decision_tree, credit_score_random_forest
 
