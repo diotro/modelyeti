@@ -1,4 +1,4 @@
-flask
-redis
-setuptools
-pytest
+flask==1.0.2
+redis==3.0.1
+setuptools==40.6.2
+pytest==4.0.0
