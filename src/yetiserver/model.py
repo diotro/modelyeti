@@ -1,6 +1,5 @@
 import json
-import logging
-logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s', level=logging.DEBUG)
+from yetiserver.logger import logging
 from collections import Counter
 
 
@@ -9,19 +8,24 @@ def deserialize(model_string):
         "decision_tree": DecisionTree,
         "random_forest": RandomForest
     }
+
+    logging.debug(f"attempting to deserialize model {model_string}")
     try:
         model_json = json.loads(model_string)
         model_type = model_json["model_type"]
         model_class = model_classes[model_type]
         return model_class(model_json)
-    except:
+    except TypeError or AttributeError or KeyError or ValueError as e:
+        logging.error(e)
         return None
 
 
 def serialize(model):
+    logging.debug(f"attempting to serialize model {model}")
     try:
         return json.dumps(model.data)
     except AttributeError or ValueError or TypeError:
+        logging.debug("could not serialize model {model}")
         return None
 
 

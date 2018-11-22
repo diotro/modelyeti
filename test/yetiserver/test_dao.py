@@ -19,7 +19,7 @@ def test_raise_exception_on_failure_to_connect_to_db(mock_redis, dao):
 def test_setting_connection_parameters_changes_connection_details(mock_redis, dao):
     dao.set_redis_connection_parameters("host", "port", "pass")
     dao._get_redis_connection()
-    mock_redis.assert_called_once_with(host= "host", port='port', password='pass')
+    mock_redis.assert_called_once_with(host="host", port='port', password='pass')
 
 
 def test_attempt_to_retrieve_model_doesnt_exist_returns_none(dao):
@@ -53,11 +53,13 @@ def test_retrieving_model_looks_in_correct_place(dao):
     expected_key = redis_keys.for_model(user, model_name)
     mock_conn.get.assert_called_once_with(expected_key)
 
+
 @pytest.mark.integration
 @pytest.mark.requires_local_redis
 def test_can_connect_to_local_redis(dao):
     conn = dao._get_redis_connection()
     assert conn
+
 
 @pytest.mark.integration
 @pytest.mark.requires_local_redis
@@ -67,6 +69,7 @@ def test_can_store_retrieve_decision_tree(dao):
     model = dao.retrieve_model("user1", "model1")
     assert credit_score_decision_tree.get_original_json() == model.get_original_json()
 
+
 @pytest.mark.integration
 @pytest.mark.requires_local_redis
 def test_can_store_retrieve_random_forest(dao):
@@ -74,6 +77,7 @@ def test_can_store_retrieve_random_forest(dao):
     assert success
     model = dao.retrieve_model("user1", "model1")
     assert credit_score_random_forest.get_original_json() == model.get_original_json()
+
 
 @pytest.mark.integration
 @pytest.mark.requires_local_redis
