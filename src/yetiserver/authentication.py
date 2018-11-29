@@ -2,43 +2,80 @@ import re
 
 import redis
 
-from yetiserver.logger import logging
+from yetiserver import redis_keys
 
 
-def register_user(dao, user_name, user_email, hashed_password):
-    """Registers a user with the given username, email, and bcrypt-hashed password.
-    :return: True if the user is created, false if they were nto
-    :raises ValueError: if the given user_name is invalid
-    :raises RegistrationError: if there was an error in registering the user.
-    """
-    logging.debug(f"Account {user_name} registered with email {user_email} and password hash {hashed_password}")
+class UserManager:
+    """Authenticates users."""
+    def __init__(self, dao):
+        self.dao = dao
 
-    if not _user_name_is_legal(user_name):
-        raise ValueError(f"Illegal username '{user_name}'")
+    @staticmethod
+    def from_redis_connection(redis_conn):
+        return UserManager(AuthenticationDao(redis_conn))
 
-    # TODO send an email to verify email address
-    try:
-        return dao.register_user(user_name, user_email, hashed_password)
-    except ValueError or redis.RedisError as e:
-        raise RegistrationError("Could not register user.", e)
+    def register_user(self, user_name: str, user_email: str, hashed_password: str):
+        """Registers a user with the given username, email, and bcrypt-hashed password.
+        :return: True if the user is created, false if they were nto
+        :raises RegistrationError: if there was an error in registering the user.
+        """
+        if not _user_name_is_legal(user_name):
+            raise ValueError(f"Illegal username '{user_name}'")
 
+        try:
+            return self.dao.add_user(user_name, user_email, hashed_password)
+        except (ValueError, RegistrationError) as e:
+            raise RegistrationError("Could not register user.", e)
 
-class RegistrationError(Exception):
-    pass
+    def check_credentials(self, user_name: str, hashed_password: str):
+        """Checks the given credentials to see if the user and password match.
+
+        :param user_name: the name of the user to check
+        :param hashed_password: the hashed password the user is trying to use to login
+        :return: whether the user has provided credentials they can use to login
+        """
+        # Must be 128 hex digits
+        if not re.compile("[0-9a-f]{128}").fullmatch(hashed_password):
+            raise ValueError("hashed password must be a hex digest of a sha3_512 hash")
+        return self.dao.retrieve_password_hash_for_user(user_name) == hashed_password
 
 
 def _user_name_is_legal(user_name):
     return re.compile('[A-Za-z0-9_!@#$%^&*]+').fullmatch(user_name)
 
 
-def check_credentials(dao, user_name, hashed_password):
-    """Checks the given credentials to see if the user and password match.
+class RegistrationError(BaseException):
+    """This error is raised if there is an error while trying to register a user."""
+    pass
 
-    :param dao: the DAO to use
-    :param user_name: the name of the user to check
-    :param hashed_password: the hashed password the user is trying to use to login
-    :return: whether the user has provided credentials they can use to login
-    """
-    if not re.compile("[0-9a-f]{128}").fullmatch(hashed_password):
-        raise ValueError("hashed password must be a hex digest of a sha3_512 hash")
-    return dao.check_credentials(user_name, hashed_password)
+
+class AuthenticationDao:
+    def __init__(self, redis_conn: redis.Redis):
+        self.rconn = redis_conn
+
+    def retrieve_password_hash_for_user(self, user_name):
+        """Returns the password hash associated with the given user, if they exist, or returns None otherwise"""
+        if not self.user_exists(user_name):
+            return self.rconn.get(redis_keys.for_user_password_hash(user_name))
+
+    def user_exists(self, user_name):
+        """Does the given user already exist?"""
+        return self.rconn.sismember(redis_keys.for_user_set(), user_name)
+
+    def add_user(self, user_name, user_email, user_password_hash):
+        """Registers the given user, with the given name, email, and password hash.
+        :raise ValueError: if the username is taken
+        :raise RegistrationError: if the user couldn't be registered.
+        """
+        try:
+            if self.user_exists(user_name):
+                raise ValueError("username is taken")
+
+            (self.rconn.pipeline()
+             .sadd(redis_keys.for_user_set(), user_name)
+             .set(redis_keys.for_user_password_hash(user_name), user_password_hash)
+             .set(redis_keys.for_user_email(user_name), user_email)
+             .execute()
+             )
+        except redis.RedisError as e:
+            raise RegistrationError(f"Could not register user {user_name} with email {user_email}", e)

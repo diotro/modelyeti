@@ -1,6 +1,72 @@
 import json
-from yetiserver.logger import logging
+import redis
 from collections import Counter
+
+from yetiserver import redis_keys
+
+
+class ModelManager:
+    """Provides tools to store and retrieve models."""
+    def __init__(self, dao):
+        self.dao = dao
+
+    def from_db_connection(self, db_conn):
+        return ModelManager(ModelDao(db_conn))
+
+    def retrieve_model(self, user_name, model_name):
+        """Retrieves a model from the database.
+
+        :param user_name: the name of the user who owns the model
+        :param model_name: the name of the model to retrieve
+        :return: The model, or None if there is no such model.
+        """
+        serialized_model = self.dao.retrieve_serialized_model(user_name, model_name)
+        if serialized_model is None:
+            return None
+        return deserialize(serialized_model)
+
+    def store_model(self, user_name, model_name, model):
+        """Stores the given model.
+
+        :param user_name: the name of the user who owns the model
+        :param model_name: the name of the model
+        :param model: the model
+        :return: a truthy value if successful, falsy otherwise
+        """
+        return self.dao.store_serialized_model(user_name, model_name, serialize(model))
+
+class ModelDao:
+    """Data access object for models."""
+    def __init__(self, redis_connection: redis.Redis):
+        self.rconn = redis_connection
+
+    def retrieve_serialized_model(self, user_name, model_name):
+        """Retrieves the serialized model from the database.
+
+        :param user_name: the user who owns the model to retrieve
+        :param model_name: the model to retrieve
+        :return: JSON, parsable as a model, if the given user has a model with the given name. Returns None if there is
+        no model with the given name
+        :raise redis.redisError: if there is an issue connecting to the database
+        """
+        try:
+            return self.rconn.get(redis_keys.for_model(user_name, model_name))
+        except redis.RedisError as e:
+            return None
+
+    def store_serialized_model(self, user_name, model_name, serialized_model):
+        """Stores the given model in redis.
+
+        :param user_name: the name of the user who is storing the model
+        :param model_name: the name of the model to store
+        :param serialized_model:
+        :return: a truthy value if storing the model succeeded, falsy if not
+        """
+        try:
+            self.rconn.set(redis_keys.for_model(user_name, model_name), serialized_model)
+            return True
+        except redis.RedisError as e:
+            return False
 
 
 def deserialize(model_string):
@@ -9,23 +75,19 @@ def deserialize(model_string):
         "random_forest": RandomForest
     }
 
-    logging.debug(f"attempting to deserialize model {model_string}")
     try:
         model_json = json.loads(model_string)
         model_type = model_json["model_type"]
         model_class = model_classes[model_type]
         return model_class(model_json)
     except TypeError or AttributeError or KeyError or ValueError as e:
-        logging.error(e)
         return None
 
 
 def serialize(model):
-    logging.debug(f"attempting to serialize model {model}")
     try:
         return json.dumps(model.data)
     except AttributeError or ValueError or TypeError:
-        logging.debug("could not serialize model {model}")
         return None
 
 
@@ -105,10 +167,8 @@ class RandomForest:
         def predict(input):
             # TODO this only works for categorical outputs, have to update for continuous output
             predictions = [tree(input) for tree in trees]
-            logging.log(logging.DEBUG, predictions)
             # Returns as array of length one, containing tuple of item and count, so value is at index [0][0]
             most_common = Counter(predictions).most_common(1)
-            logging.log(logging.DEBUG, most_common)
             return most_common[0][0]
 
         return predict
