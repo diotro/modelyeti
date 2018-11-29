@@ -1,11 +1,13 @@
+import redis
+import json
 import unittest.mock as mock
 
-import pytest
-import redis
-
-from test.example_models import credit_score_decision_tree, credit_score_random_forest
 from yetiserver import model, redis_keys
-
+from test.example_models import \
+    all_test_decision_trees, \
+    all_test_random_forests, \
+    credit_score_decision_tree, \
+    credit_score_random_forest
 
 def model_manager_mocked():
     """Mocks the DAO for a manager."""
@@ -54,15 +56,6 @@ def test_retrieving_model_looks_in_correct_place():
 
     expected_key = redis_keys.for_model(user, model_name)
     rconn_mock.get.assert_called_once_with(expected_key)
-
-import json
-
-from yetiserver import model
-from test.example_models import \
-    all_test_decision_trees, \
-    all_test_random_forests, \
-    credit_score_decision_tree, \
-    credit_score_random_forest
 
 
 def de_and_re_serialize(a_model):

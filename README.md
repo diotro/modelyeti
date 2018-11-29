@@ -24,13 +24,12 @@ the background on port 14321 with:
 redis-server --port 14321 --daemonize yes
 ```
 
-Run the server with:
+Once redis is running on port 14321, run the server with:
 ```
-export FLASK_APP=src/yetiserver/app.py
-flask run
+./scripts/run_server.py --credentials ./secrets/credentials_dev.json
 ```
 
 Run the unit tests with:
 ```
-python3 -m pytest test -k "not integration"
+python3 -m pytest test/unit
 ```

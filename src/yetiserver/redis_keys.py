@@ -16,5 +16,6 @@ def for_user_password_hash(user_name):
 def for_user_email(user_name):
     return f"users::{user_name}::email"
 
+
 def for_user_api_keys(user_name):
     return f"users::{user_name}::api_keys"

@@ -4,7 +4,6 @@ import redis
 
 from yetiserver import redis_keys
 
-
 class UserManager:
     """Authenticates users."""
     def __init__(self, dao):
