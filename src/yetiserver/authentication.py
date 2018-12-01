@@ -4,14 +4,15 @@ import redis
 
 from yetiserver import redis_keys
 
+
+
+def auth_manager_from_redis_connection(redis_conn):
+    return UserManager(AuthenticationDao(redis_conn))
+
 class UserManager:
     """Authenticates users."""
     def __init__(self, dao):
         self.dao = dao
-
-    @staticmethod
-    def from_redis_connection(redis_conn):
-        return UserManager(AuthenticationDao(redis_conn))
 
     def register_user(self, user_name: str, user_email: str, hashed_password: str):
         """Registers a user with the given username, email, and bcrypt-hashed password.
@@ -26,17 +27,18 @@ class UserManager:
         except (ValueError, RegistrationError) as e:
             raise RegistrationError("Could not register user.", e)
 
-    def check_credentials(self, user_name: str, hashed_password: str):
+    def check_credentials(self, user_name, hashed_password):
         """Checks the given credentials to see if the user and password match.
 
         :param user_name: the name of the user to check
         :param hashed_password: the hashed password the user is trying to use to login
-        :return: whether the user has provided credentials they can use to login
+        :return: boolean, whether the user has provided credentials they can use to login
         """
         # Must be 128 hex digits
         if not re.compile("[0-9a-f]{128}").fullmatch(hashed_password):
             raise ValueError("hashed password must be a hex digest of a sha3_512 hash")
-        return self.dao.retrieve_password_hash_for_user(user_name) == hashed_password
+        retrieved_hash = self.dao.retrieve_password_hash_for_user(user_name)
+        return retrieved_hash == hashed_password.encode("utf8")
 
 
 def _user_name_is_legal(user_name):
@@ -54,7 +56,7 @@ class AuthenticationDao:
 
     def retrieve_password_hash_for_user(self, user_name):
         """Returns the password hash associated with the given user, if they exist, or returns None otherwise"""
-        if not self.user_exists(user_name):
+        if self.user_exists(user_name):
             return self.rconn.get(redis_keys.for_user_password_hash(user_name))
 
     def user_exists(self, user_name):

@@ -11,7 +11,8 @@ def database_connection_from_file(config_filename):
     :return: a :py:class:`redis.Redis` connection
     """
     with open(config_filename, 'r') as config_file:
-        redis_config = json.load(config_file)["redis"]
+        file_contents = json.load(config_file)
+        redis_config = file_contents["redis"]
 
     try:
         host = redis_config["host"]

@@ -1,6 +1,6 @@
 .DS_Store
 .idea/*
-
+dump.rdb
 
 # Sourced from https://github.com/github/gitignore/blob/master/Python.gitignore
 

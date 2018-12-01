@@ -4,14 +4,21 @@ import argparse
 from yetiserver import app_factory
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--database-credentials-file", required=True)
+    parser.add_argument("--credentials", required=True)
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", default=5000)
     parser.add_argument("--debug", default=False)
 
     args = parser.parse_args()
-    db_creds, host, port, debug = args.database_credentials_file, args.host, args.port, args.debug
+    run_server(args.credentials, args.host, args.port, args.debug)
+
+
+def run_server(db_creds, host, port, debug):
     app = app_factory.create_app(db_creds)
     app.run(host, port, debug)
+
+
+if __name__ == '__main__':
+    main()
