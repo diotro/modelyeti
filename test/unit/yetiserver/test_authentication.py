@@ -2,8 +2,8 @@ from unittest import mock
 
 import pytest
 
-from yetiserver import authentication
-from yetiserver.authentication import UserManager
+from yetiserver import authentication, redis_keys
+from yetiserver.authentication import UserManager, AuthenticationDao, UserNotFoundError
 import hashlib
 
 
@@ -67,6 +67,7 @@ def test_check_credentials():
 
     assert mock_dao.called_once_with(username, passhash)
 
+
 def test_check_credentials_with_invalid_password():
     mock_dao = mock.Mock()
     auth = UserManager(mock_dao)
@@ -74,3 +75,49 @@ def test_check_credentials_with_invalid_password():
     passhash = "not a real pass hash!"
     with pytest.raises(ValueError):
         auth.check_credentials(username, passhash)
+
+
+def test_update_password():
+    mock_dao = mock.Mock()
+    auth = UserManager(mock_dao)
+    username = "user"
+    passhash = hashlib.sha3_512(b"password").hexdigest()
+    auth.update_password(username, passhash)
+    assert mock_dao.update_password_hash_for_user.called_with(username, passhash)
+
+
+def test_retrieve_password_hash_for_user():
+    mock_rconn = mock.Mock()
+    dao = AuthenticationDao(mock_rconn)
+    dao.user_exists = mock.Mock(return_value=True)
+    username = "user"
+    dao.retrieve_password_hash_for_user(username)
+    mock_rconn.get.assert_called_once_with(redis_keys.for_user_password_hash(username))
+
+
+def test_retrieve_password_hash_for_user_that_does_not_exist():
+    mock_rconn = mock.Mock()
+    dao = AuthenticationDao(mock_rconn)
+    dao.user_exists = mock.Mock(return_value=False)
+    username = "user"
+    with pytest.raises(UserNotFoundError):
+        dao.retrieve_password_hash_for_user(username)
+
+def update_password_has_for_user():
+    mock_rconn = mock.Mock()
+    dao = AuthenticationDao(mock_rconn)
+    dao.user_exists = mock.Mock(return_value=True)
+    username = "user"
+    passhash = hashlib.sha3_512(b"password").hexdigest()
+    dao.update_password_hash_for_user(username, passhash)
+    assert mock_rconn.set.called_once_with(redis_keys.for_user_password_hash(username), passhash)
+
+
+def update_password_has_for_user_that_does_not_exist():
+    mock_rconn = mock.Mock()
+    dao = AuthenticationDao(mock_rconn)
+    dao.user_exists = mock.Mock(return_value=False)
+    username = "user"
+    passhash = hashlib.sha3_512(b"password").hexdigest()
+    with pytest.raises(UserNotFoundError):
+        dao.update_password_hash_for_user(username, passhash)

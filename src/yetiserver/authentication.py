@@ -5,12 +5,13 @@ import redis
 from yetiserver import redis_keys
 
 
-
 def auth_manager_from_redis_connection(redis_conn):
     return UserManager(AuthenticationDao(redis_conn))
 
+
 class UserManager:
     """Authenticates users."""
+
     def __init__(self, dao):
         self.dao = dao
 
@@ -40,6 +41,10 @@ class UserManager:
         retrieved_hash = self.dao.retrieve_password_hash_for_user(user_name)
         return retrieved_hash == hashed_password.encode("utf8")
 
+    def update_password(self, username, new_password):
+        """Sets the user's password to the one given. """
+        self.dao.update_password_hash_for_user(username, new_password)
+
 
 def _user_name_is_legal(user_name):
     return re.compile('[A-Za-z0-9_!@#$%^&*]+').fullmatch(user_name)
@@ -47,6 +52,11 @@ def _user_name_is_legal(user_name):
 
 class RegistrationError(BaseException):
     """This error is raised if there is an error while trying to register a user."""
+    pass
+
+
+class UserNotFoundError(BaseException):
+    """This error is raised if the user was supposed to be found."""
     pass
 
 
@@ -58,6 +68,15 @@ class AuthenticationDao:
         """Returns the password hash associated with the given user, if they exist, or returns None otherwise"""
         if self.user_exists(user_name):
             return self.rconn.get(redis_keys.for_user_password_hash(user_name))
+        else:
+            raise UserNotFoundError("Username is not found")
+
+    def update_password_hash_for_user(self, user_name, new_password_hash):
+        """Updates the password hash associated with the given user, if they exist, or returns None otherwise"""
+        if self.user_exists(user_name):
+            self.rconn.set(redis_keys.for_user_password_hash(user_name), new_password_hash)
+        else:
+            raise UserNotFoundError("Username is not found")
 
     def user_exists(self, user_name):
         """Does the given user already exist?"""
