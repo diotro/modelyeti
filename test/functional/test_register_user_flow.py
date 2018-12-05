@@ -1,20 +1,19 @@
-import hashlib
+from test.functional.fixtures import get_test_app, hash_password
 
-from test.functional.fixtures import spin_up_app, kill_app, hash_password
 
-app = spin_up_app()
-client = app.test_client()
+with get_test_app() as app:
+    client = app.test_client()
 
-username = "testuser"
-passhash = hash_password("passwordasdfa")
+    username = "testuser"
+    passhash = hash_password("passwordasdfa")
 
-client.post("/user/register/", json={
-    "username": "testuser",
-    "passhash": passhash,
-    "user_email": "user@example.com"
-})
 
-try:
+    def register_user(username, passhash, email):
+        client.post("/user/register/", json={
+            "username": username,
+            "passhash": passhash,
+            "user_email": email
+        })
+
+    register_user("testuser", passhash, "user@example.com")
     assert app.auth.check_credentials(username, passhash)
-finally:
-    kill_app()

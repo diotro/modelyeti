@@ -24,10 +24,11 @@ def create_credit_decision_tree_json(income_split, left_credit_score_split, righ
     }
 
 
-credit_score_decision_tree = model.DecisionTree({
+credit_score_decision_tree_json = {
     "model_type": "decision_tree",
     "model": create_credit_decision_tree_json(75_000, 700, 500)
-})
+}
+credit_score_decision_tree = model.DecisionTree(credit_score_decision_tree_json)
 
 credit_score_random_forest = model.RandomForest({
     "model_type": "random_forest",

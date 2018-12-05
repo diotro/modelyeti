@@ -19,6 +19,9 @@ def create_app(database_credentials_file):
     from yetiserver.authentication import auth_manager_from_redis_connection
     app.auth = auth_manager_from_redis_connection(app.db)
 
+    from yetiserver.model import model_manager_from_redis_conn
+    app.model = model_manager_from_redis_conn(app.db)
+
     from yetiserver.api import api_blueprint
     app.register_blueprint(api_blueprint)
 

@@ -1,16 +1,24 @@
 import json
+import traceback
+
 import redis
 from collections import Counter
 
 from yetiserver import redis_keys
 
 
+def model_manager_from_redis_conn(rconn):
+    return ModelManager.from_db_connection(rconn)
+
+
 class ModelManager:
     """Provides tools to store and retrieve models."""
+
     def __init__(self, dao):
         self.dao = dao
 
-    def from_db_connection(self, db_conn):
+    @staticmethod
+    def from_db_connection(db_conn):
         return ModelManager(ModelDao(db_conn))
 
     def retrieve_model(self, user_name, model_name):
@@ -21,9 +29,10 @@ class ModelManager:
         :return: The model, or None if there is no such model.
         """
         serialized_model = self.dao.retrieve_serialized_model(user_name, model_name)
+        print(f"ret {user_name}\n{model_name}\n{serialized_model}")
         if serialized_model is None:
             return None
-        return deserialize(serialized_model)
+        return deserialize_from_bytes(serialized_model)
 
     def store_model(self, user_name, model_name, model):
         """Stores the given model.
@@ -33,10 +42,13 @@ class ModelManager:
         :param model: the model
         :return: a truthy value if successful, falsy otherwise
         """
+        print(f"sto {user_name}\n{model_name}\n{serialize(model)}")
         return self.dao.store_serialized_model(user_name, model_name, serialize(model))
+
 
 class ModelDao:
     """Data access object for models."""
+
     def __init__(self, redis_connection: redis.Redis):
         self.rconn = redis_connection
 
@@ -63,31 +75,46 @@ class ModelDao:
         :return: a truthy value if storing the model succeeded, falsy if not
         """
         try:
-            self.rconn.set(redis_keys.for_model(user_name, model_name), serialized_model)
+            self.rconn.set(redis_keys.for_model(user_name, model_name), json.dumps(serialized_model))
             return True
         except redis.RedisError as e:
             return False
 
 
-def deserialize(model_string):
+def deserialize_from_bytes(model_json_as_bytestring):
+    return deserialize(json.loads(model_json_as_bytestring.decode("utf8")))
+
+
+def deserialize_from_string(model_json_as_string):
+    return deserialize(json.loads(model_json_as_string))
+
+
+def deserialize(model_json):
     model_classes = {
         "decision_tree": DecisionTree,
         "random_forest": RandomForest
     }
 
     try:
-        model_json = json.loads(model_string)
         model_type = model_json["model_type"]
         model_class = model_classes[model_type]
         return model_class(model_json)
     except TypeError or AttributeError or KeyError or ValueError as e:
+        traceback.print_exc()
+        return None
+
+
+def serialize_to_string(model):
+    try:
+        return json.dumps(model.data)
+    except AttributeError or ValueError or TypeError:
         return None
 
 
 def serialize(model):
     try:
-        return json.dumps(model.data)
-    except AttributeError or ValueError or TypeError:
+        return model.data
+    except AttributeError:
         return None
 
 

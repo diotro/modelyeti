@@ -43,7 +43,7 @@ def test_storing_model_in_correct_place():
     manager.store_model(user, model_name, credit_score_decision_tree)
 
     expected_key = redis_keys.for_model(user, model_name)
-    expected_value = model.serialize(credit_score_decision_tree)
+    expected_value = model.serialize_to_string(credit_score_decision_tree)
     rconn_mock.set.assert_called_once_with(expected_key, expected_value)
 
 
@@ -59,7 +59,7 @@ def test_retrieving_model_looks_in_correct_place():
 
 
 def de_and_re_serialize(a_model):
-    return json.loads(model.serialize(model.deserialize(json.dumps(a_model.get_original_json()))))
+    return model.serialize(model.deserialize(a_model.get_original_json()))
 
 
 def test_serialize_inverse_deserialize_decision_tree():
