@@ -8,7 +8,7 @@ from yetiserver import model
 api_blueprint = Blueprint('api', __name__)
 
 
-@api_blueprint.route('/model/upload/<user_name>/<model_name>', methods=["POST"])
+@api_blueprint.route('/model/upload/<user_name>/<model_name>/', methods=["POST"])
 def upload_model(user_name, model_name):
     """Uploads a decision tree model with the given name"""
     if not authenticate_user(user_name, request):

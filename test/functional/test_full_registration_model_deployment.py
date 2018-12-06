@@ -11,7 +11,7 @@ with get_test_app() as app:
 
 
     def upload_model(username, passhash, model, model_name):
-        client.post(f"/model/upload/{username}/{model_name}",
+        client.post(f"/model/upload/{username}/{model_name}/",
                     json=model,
                     headers={"password_hash_sha3_512": passhash})
 
@@ -19,7 +19,7 @@ with get_test_app() as app:
     def make_prediction(username, passhash, model_name, input_data):
         return client.get(f"/model/{username}/{model_name}/predict/",
                           json=input_data,
-                          headers={"password_hash_sha3_512": passhash}),
+                          headers={"password_hash_sha3_512": passhash})
 
 
     register_user(username, passhash, "email@example.com")
@@ -27,4 +27,4 @@ with get_test_app() as app:
 
     response = make_prediction(username, passhash, model_name, {"income": 10, "credit score": 10})
 
-    response[0]
+    assert b"decline" in response.data
