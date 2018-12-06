@@ -26,7 +26,7 @@ redis-server --port 14321 --daemonize yes
 
 Once redis is running on port 14321, run the server with:
 ```
-./scripts/run_server.py --credentials ./secrets/credentials_dev.json
+./scripts/run_server.py --credentials ./secrets/db_credentials_dev.json
 ```
 
 Run the unit tests with:
