@@ -21,9 +21,9 @@ def test_registration_model_deployment():
                               json=input_data,
                               headers={"password_hash_sha3_512": passhash})
 
-        register_user(username, passhash, "email@example.com")
+        register_user(client, username, passhash, "email@example.com")
         upload_model(username, passhash, credit_score_decision_tree_json, model_name)
         response = make_prediction(username, passhash, model_name, {"income": 10, "credit score": 10})
 
-        assert response.status == 200
+        assert response.status == "200 OK"
         assert b"decline" in response.data
