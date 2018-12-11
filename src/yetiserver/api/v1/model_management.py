@@ -1,14 +1,10 @@
-"""A blueprint for the model management components of the API."""
-
-
 from flask import Blueprint, current_app, request, jsonify, make_response
 
 from yetiserver import model
 
-api_blueprint = Blueprint('api', __name__)
+model_management_blueprint = Blueprint('model_management', __name__)
 
-
-@api_blueprint.route('/model/upload/<user_name>/<model_name>/', methods=["POST"])
+@model_management_blueprint.route('/upload/<user_name>/<model_name>/', methods=["POST"])
 def upload_model(user_name, model_name):
     """Uploads a decision tree model with the given name"""
     if not authenticate_user(user_name, request):
@@ -20,7 +16,7 @@ def upload_model(user_name, model_name):
     return jsonify(success=True)
 
 
-@api_blueprint.route('/model/<user_name>/<model_name>/predict/')
+@model_management_blueprint.route('/<user_name>/<model_name>/predict/')
 def predict_with_model(user_name, model_name):
     if not authenticate_user(user_name, request):
         return make_response("Authentication failed", 403)

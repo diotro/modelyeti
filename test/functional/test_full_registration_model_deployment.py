@@ -12,12 +12,12 @@ def test_registration_model_deployment():
         client = app.test_client()
 
         def upload_model(username, passhash, model, model_name):
-            client.post(f"/model/upload/{username}/{model_name}/",
+            client.post(f"/v1/model_management/upload/{username}/{model_name}/",
                         json=model,
                         headers={"password_hash_sha3_512": passhash})
 
         def make_prediction(username, passhash, model_name, input_data):
-            return client.get(f"/model/{username}/{model_name}/predict/",
+            return client.get(f"/v1/model_management/{username}/{model_name}/predict/",
                               json=input_data,
                               headers={"password_hash_sha3_512": passhash})
 
