@@ -1,20 +1,21 @@
 """The application factory, which produces application servers. See
 http://flask.pocoo.org/docs/1.0/patterns/appfactories
 for more details."""
+import json
 
 from flask import Flask
 
 
-def create_app(database_credentials_file):
+def create_app(database_credentials):
     """Creates a flask application.
 
-    :param database_credentials_file: the name of the file with database credentials.
+    :param database_credentials: the database credentials.
     :return: the app
     """
     app = Flask(__name__)
 
-    from yetiserver.database import database_connection_from_file
-    app.db = database_connection_from_file(database_credentials_file)
+    from yetiserver.database import connect_to_database
+    app.db = connect_to_database(database_credentials)
 
     from yetiserver.authentication import auth_manager_from_redis_connection
     app.auth = auth_manager_from_redis_connection(app.db)
@@ -25,7 +26,12 @@ def create_app(database_credentials_file):
     from yetiserver.api.v1 import register_api_blueprints
     register_api_blueprints(app)
 
-    from yetiserver.user_management_blueprint import user_management_blueprint
+    from yetiserver.api.v1.user_management_blueprint import user_management_blueprint
     app.register_blueprint(user_management_blueprint)
 
     return app
+
+
+def create_app_from_file(database_credentials_file):
+    with open(database_credentials_file, 'r') as file:
+        return create_app(json.load(file))

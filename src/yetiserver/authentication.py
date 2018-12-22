@@ -6,7 +6,7 @@ from yetiserver import redis_keys
 
 
 def auth_manager_from_redis_connection(redis_conn):
-    return UserManager(AuthenticationDao(redis_conn))
+    return UserManager(UserDao(redis_conn))
 
 
 class UserManager:
@@ -45,6 +45,12 @@ class UserManager:
         """Sets the user's password to the one given. """
         self.dao.update_password_hash_for_user(username, new_password)
 
+    def delete_user(self, username):
+        """Deletes the given user.
+        :returns: truthy value if there was a user with the given name, falsy otherwise.
+        """
+        self.dao.delete_user(username)
+
 
 def _user_name_is_legal(user_name):
     return re.compile('[A-Za-z0-9_!@#$%^&*]+').fullmatch(user_name)
@@ -60,9 +66,27 @@ class UserNotFoundError(BaseException):
     pass
 
 
-class AuthenticationDao:
+class UserDao:
     def __init__(self, redis_conn: redis.Redis):
         self.rconn = redis_conn
+
+    def add_user(self, user_name, user_email, user_password_hash):
+        """Registers the given user, with the given name, email, and password hash.
+        :raise ValueError: if the username is taken
+        :raise RegistrationError: if the user couldn't be registered.
+        """
+        try:
+            if self.user_exists(user_name):
+                raise ValueError("username is taken")
+
+            (self.rconn
+             .pipeline()
+             .sadd(redis_keys.for_user_set(), user_name)
+             .set(redis_keys.for_user_password_hash(user_name), user_password_hash)
+             .set(redis_keys.for_user_email(user_name), user_email)
+             .execute())
+        except redis.RedisError as e:
+            raise RegistrationError(f"Could not register user {user_name} with email {user_email}", e)
 
     def retrieve_password_hash_for_user(self, user_name):
         """Returns the password hash associated with the given user, if they exist, or returns None otherwise"""
@@ -82,20 +106,5 @@ class AuthenticationDao:
         """Does the given user already exist?"""
         return self.rconn.sismember(redis_keys.for_user_set(), user_name)
 
-    def add_user(self, user_name, user_email, user_password_hash):
-        """Registers the given user, with the given name, email, and password hash.
-        :raise ValueError: if the username is taken
-        :raise RegistrationError: if the user couldn't be registered.
-        """
-        try:
-            if self.user_exists(user_name):
-                raise ValueError("username is taken")
-
-            (self.rconn.pipeline()
-             .sadd(redis_keys.for_user_set(), user_name)
-             .set(redis_keys.for_user_password_hash(user_name), user_password_hash)
-             .set(redis_keys.for_user_email(user_name), user_email)
-             .execute()
-             )
-        except redis.RedisError as e:
-            raise RegistrationError(f"Could not register user {user_name} with email {user_email}", e)
+    def delete_user(self, user_name):
+        return self.rconn.delete(redis_keys.for_user_information(user_name))

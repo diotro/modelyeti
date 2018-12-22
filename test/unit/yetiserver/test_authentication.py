@@ -3,7 +3,7 @@ from unittest import mock
 import pytest
 
 from yetiserver import authentication, redis_keys
-from yetiserver.authentication import UserManager, AuthenticationDao, UserNotFoundError
+from yetiserver.authentication import UserManager, UserDao, UserNotFoundError
 import hashlib
 
 
@@ -86,9 +86,17 @@ def test_update_password():
     assert mock_dao.update_password_hash_for_user.called_with(username, passhash)
 
 
+def test_delete_user():
+    mock_dao = mock.Mock()
+    auth = UserManager(mock_dao)
+    username = "user"
+    auth.delete_user(username)
+    assert mock_dao.delete_user.called_once_with(username)
+
+
 def test_retrieve_password_hash_for_user():
     mock_rconn = mock.Mock()
-    dao = AuthenticationDao(mock_rconn)
+    dao = UserDao(mock_rconn)
     dao.user_exists = mock.Mock(return_value=True)
     username = "user"
     dao.retrieve_password_hash_for_user(username)
@@ -97,27 +105,37 @@ def test_retrieve_password_hash_for_user():
 
 def test_retrieve_password_hash_for_user_that_does_not_exist():
     mock_rconn = mock.Mock()
-    dao = AuthenticationDao(mock_rconn)
+    dao = UserDao(mock_rconn)
     dao.user_exists = mock.Mock(return_value=False)
     username = "user"
     with pytest.raises(UserNotFoundError):
         dao.retrieve_password_hash_for_user(username)
 
-def update_password_has_for_user():
+
+def test_update_password_has_for_user():
     mock_rconn = mock.Mock()
-    dao = AuthenticationDao(mock_rconn)
+    dao = UserDao(mock_rconn)
     dao.user_exists = mock.Mock(return_value=True)
     username = "user"
     passhash = hashlib.sha3_512(b"password").hexdigest()
     dao.update_password_hash_for_user(username, passhash)
-    assert mock_rconn.set.called_once_with(redis_keys.for_user_password_hash(username), passhash)
+    assert mock_rconn.set.called_once_with(redis_keys.for_user_password_hash(username), "asdf")
 
 
-def update_password_has_for_user_that_does_not_exist():
+def test_update_password_has_for_user_that_does_not_exist():
     mock_rconn = mock.Mock()
-    dao = AuthenticationDao(mock_rconn)
+    dao = UserDao(mock_rconn)
     dao.user_exists = mock.Mock(return_value=False)
     username = "user"
     passhash = hashlib.sha3_512(b"password").hexdigest()
     with pytest.raises(UserNotFoundError):
         dao.update_password_hash_for_user(username, passhash)
+
+
+def test_remove_user_calls_delete():
+    mock_rconn = mock.Mock()
+
+    dao = UserDao(mock_rconn)
+    dao.delete_user("user1")
+
+    mock_rconn.delete.assert_called_with(redis_keys.for_user_information("user1"))
