@@ -94,6 +94,23 @@ def test_delete_user():
     assert mock_dao.delete_user.called_once_with(username)
 
 
+def test_update_user_email():
+    mock_dao = mock.Mock()
+    auth = UserManager(mock_dao)
+    user = "user"
+    email = "email@example.com"
+    auth.update_email(user, email)
+    assert mock_dao.update_user_email.called_once_with(user, email)
+
+
+def test_user_info():
+    mock_dao = mock.Mock()
+    auth = UserManager(mock_dao)
+    auth.user_info("user")
+
+    assert mock_dao.user_info.called_once_with("user")
+
+
 def test_retrieve_password_hash_for_user():
     mock_rconn = mock.Mock()
     dao = UserDao(mock_rconn)

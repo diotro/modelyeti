@@ -23,6 +23,21 @@ def register_user():
     return jsonify(200)
 
 
+@user_management_blueprint.route("/user/info/", methods=["GET"])
+def info():
+    json_body = request.get_json(force=True)
+    if not ensure_json_is_dictionary_with_keys(json_body, "username", "passhash"):
+        return abort(500)
+
+    username = json_body["username"]
+    passhash = json_body["passhash"]
+    user_manager = current_app.auth
+
+    if user_manager.check_credentials(username, passhash):
+        return jsonify(user_manager.user_info(username))
+    else:
+        return abort(500)
+
 @user_management_blueprint.route("/user/change_password/", methods=["POST"])
 def change_password():
     json_body = request.get_json(force=True)
@@ -40,6 +55,23 @@ def change_password():
     else:
         return abort(500)
 
+@user_management_blueprint.route("/user/update_email/", methods=["POST"])
+def update_email():
+    """Updates the email of the given user."""
+    json_body = request.get_json(force=True)
+    if not ensure_json_is_dictionary_with_keys(json_body, "username", "passhash", "new_email"):
+        return abort(500)
+
+    username = json_body["username"]
+    passhash = json_body["passhash"]
+    new_email = json_body["new_email"]
+
+    user_manager = current_app.auth
+    if user_manager.check_credentials(username, passhash):
+        user_manager.update_email(username, new_email)
+        return jsonify(200)
+    else:
+        return abort(500)
 
 @user_management_blueprint.route("/user/delete/", methods=["DELETE"])
 def delete_user():

@@ -41,6 +41,10 @@ class UserManager:
         retrieved_hash = self.dao.retrieve_password_hash_for_user(user_name)
         return retrieved_hash == hashed_password.encode("utf8")
 
+    def update_email(self, username, new_email):
+        """Sets the user's email to the given string."""
+        self.dao.update_user_email(username, new_email)
+
     def update_password(self, username, new_password):
         """Sets the user's password to the one given. """
         self.dao.update_password_hash_for_user(username, new_password)
@@ -50,6 +54,9 @@ class UserManager:
         :returns: truthy value if there was a user with the given name, falsy otherwise.
         """
         self.dao.delete_user(username)
+
+    def user_info(self, user_name):
+        return self.dao.user_info(user_name)
 
 
 def _user_name_is_legal(user_name):
@@ -102,9 +109,24 @@ class UserDao:
         else:
             raise UserNotFoundError("Username is not found")
 
+    def update_user_email(self, user_name, new_email):
+        if self.user_exists(user_name):
+            self.rconn.set(redis_keys.for_user_email(user_name), new_email)
+        else:
+            raise UserNotFoundError("Username is not found")
+
     def user_exists(self, user_name):
         """Does the given user already exist?"""
         return self.rconn.sismember(redis_keys.for_user_set(), user_name)
+
+    def user_info(self, user_name):
+        if self.user_exists(user_name):
+            return {
+                "username": user_name,
+                "email": self.rconn.get(redis_keys.for_user_email(user_name)).decode("utf8")
+            }
+        else:
+            return None
 
     def delete_user(self, user_name):
         return self.rconn.delete(redis_keys.for_user_information(user_name))
