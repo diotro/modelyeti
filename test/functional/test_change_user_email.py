@@ -12,13 +12,13 @@ def change_user_email(client, username, passhash, new_email):
         "new_email": new_email
     })
 
+
 def get_user_info(client, username, passhash):
     response = client.get("/user/info/", json={
         "username": username,
         "passhash": passhash
     })
     return response.json
-
 
 
 def test_change_user_password():

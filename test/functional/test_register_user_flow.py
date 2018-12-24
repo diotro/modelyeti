@@ -5,7 +5,7 @@ def register_user(client, username, passhash, email):
     client.post("/user/register/", json={
         "username": username,
         "passhash": passhash,
-        "user_email": email
+        "email": email
     })
 
 
