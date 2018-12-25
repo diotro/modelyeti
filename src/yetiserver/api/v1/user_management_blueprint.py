@@ -13,14 +13,12 @@ def uses_json_keys(*keys):
     # The decorator function: given a handler that we want to add
     # key retrieval to, will pass kwargs for those keys.
     def decorator(func):
-        print(f"decorating {func}")
         # This returns the wrapped function, which will first perform
         # the validation, then retrieve the key/value pairs from the json
         # body of the current request, and then provide those values as kwargs
         # to the provided handler function.
         @wraps(func)
         def wrapper(*args, **kwargs):
-            print(f"wrapper {args} {kwargs}")
             # This code used to exist in each handler, but now can be deduplicated and
             # only maintained here: retriving the json body, ensuring the
             # right keys exist, and then extracting values for the needed keys.
@@ -56,7 +54,6 @@ def register_user(username, passhash, email):
     """
     user_manager = current_app.auth
     user_manager.register_user(username, email, passhash)
-    print("registered user")
     return jsonify(200)
 
 
