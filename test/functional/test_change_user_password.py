@@ -3,7 +3,7 @@ from test.functional.fixtures import get_test_app, wipe_databases, hash_password
 
 
 def change_user_password(client, username, old_pass_hash, new_pass_hash):
-    client.post("/user/change_password/", json={
+    client.post("/v1/user_management/user/change_password/", json={
         "username": username,
         "old_password": old_pass_hash,
         "new_password": new_pass_hash

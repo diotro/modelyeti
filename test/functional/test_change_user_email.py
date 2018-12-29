@@ -6,7 +6,7 @@ from test.functional.test_register_user_flow import register_user
 
 
 def change_user_email(client, username, passhash, new_email):
-    client.post("/user/update_email/", json={
+    client.post("/v1/user_management/user/update_email/", json={
         "username": username,
         "passhash": passhash,
         "new_email": new_email
@@ -14,7 +14,7 @@ def change_user_email(client, username, passhash, new_email):
 
 
 def get_user_info(client, username, passhash):
-    response = client.get("/user/info/", json={
+    response = client.get("/v1/user_management/user/info/", json={
         "username": username,
         "passhash": passhash
     })

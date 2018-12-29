@@ -1,5 +1,5 @@
 from test.functional.test_register_user_flow import register_user
-from test.functional.fixtures import hash_password, get_test_app, wipe_databases
+from test.functional.fixtures import hash_password, get_test_app
 from test.example_models import credit_score_decision_tree_json
 
 
