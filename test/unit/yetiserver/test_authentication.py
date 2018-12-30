@@ -49,12 +49,12 @@ def test_register_user_but_another_user_exists():
     pass_hash2 = hashlib.sha3_512(b"p4ssword").hexdigest()
 
     auth.register_user(user_name, email, pass_hash1)
+    mock_dao.add_user.assert_called_with(user_name, email, pass_hash1)
     with pytest.raises(authentication.RegistrationError):
         mock_dao.add_user.side_effect = ValueError()
         auth.register_user(user_name, email, pass_hash2)
     assert mock_dao.add_user.call_count == 2
-    assert mock_dao.add_user.called_with(user_name, email, pass_hash1)
-    assert mock_dao.add_user.called_with(user_name, email, pass_hash2)
+    mock_dao.add_user.assert_called_with(user_name, email, pass_hash2)
 
 
 def test_check_credentials():
@@ -62,10 +62,10 @@ def test_check_credentials():
     auth = UserManager(mock_dao)
     username = "user"
     passhash = hashlib.sha3_512(b"password").hexdigest()
-    mock_dao.retrieve_password_hash_for_user.return_value(passhash)
-    auth.check_credentials(username, passhash)
+    mock_dao.retrieve_password_hash_for_user.return_value = passhash.encode('utf8')
+    assert auth.check_credentials(username, passhash)
 
-    assert mock_dao.called_once_with(username, passhash)
+    mock_dao.retrieve_password_hash_for_user.assert_called_once_with(username)
 
 
 def test_check_credentials_with_invalid_password():
@@ -83,7 +83,7 @@ def test_update_password():
     username = "user"
     passhash = hashlib.sha3_512(b"password").hexdigest()
     auth.update_password(username, passhash)
-    assert mock_dao.update_password_hash_for_user.called_with(username, passhash)
+    mock_dao.update_password_hash_for_user.assert_called_with(username, passhash)
 
 
 def test_delete_user():
@@ -91,7 +91,7 @@ def test_delete_user():
     auth = UserManager(mock_dao)
     username = "user"
     auth.delete_user(username)
-    assert mock_dao.delete_user.called_once_with(username)
+    mock_dao.delete_user.assert_called_once_with(username)
 
 
 def test_update_user_email():
@@ -100,7 +100,7 @@ def test_update_user_email():
     user = "user"
     email = "email@example.com"
     auth.update_email(user, email)
-    assert mock_dao.update_user_email.called_once_with(user, email)
+    mock_dao.update_user_email.assert_called_once_with(user, email)
 
 
 def test_user_info():
@@ -108,7 +108,7 @@ def test_user_info():
     auth = UserManager(mock_dao)
     auth.user_info("user")
 
-    assert mock_dao.user_info.called_once_with("user")
+    mock_dao.user_info.assert_called_once_with("user")
 
 
 def test_retrieve_password_hash_for_user():

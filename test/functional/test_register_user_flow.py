@@ -2,10 +2,10 @@ from test.functional.fixtures import get_test_app, hash_password
 
 
 def register_user(client, username, passhash, email):
-    client.post("/user/register/", json={
+    client.post("/v1/user_management/user/register/", json={
         "username": username,
         "passhash": passhash,
-        "user_email": email
+        "email": email
     })
 
 
