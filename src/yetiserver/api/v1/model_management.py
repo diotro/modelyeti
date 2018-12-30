@@ -1,6 +1,7 @@
 from flask import Blueprint, current_app, request, jsonify, make_response
 
 from yetiserver import model
+from yetiserver.api.v1.utils import authenticate_user
 
 model_management_blueprint = Blueprint('model_management', __name__)
 
@@ -22,6 +23,7 @@ def predict_with_model(user_name, model_name):
         return make_response("Authentication failed", 403)
 
     row = request.get_json(force=True)
+    current_app.model_log.increment_predictions_counter(user_name, model_name)
     model_func = current_app.model.retrieve_model(user_name, model_name)
     if model_func:
         return jsonify(model_func(row))
@@ -31,6 +33,3 @@ def predict_with_model(user_name, model_name):
         return resp
 
 
-def authenticate_user(user_name, request):
-    pass_hash = request.headers.get("password_hash_sha3_512")
-    return current_app.auth.check_credentials(user_name, pass_hash)
