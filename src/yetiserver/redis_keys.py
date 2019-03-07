@@ -27,3 +27,6 @@ def for_user_api_keys(user_name):
 
 def for_user_billing_info(user_name):
     return f"{for_user_information(user_name)}::billing_information"
+
+def for_prediction_count(user_name, model_name):
+    return f"model_log::{user_name}::{model_name}::prediction_count"
